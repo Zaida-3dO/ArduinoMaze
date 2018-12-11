@@ -20,7 +20,7 @@ const int collision_distance = 11;
 const int collision_left = 7;
 const int collision_right = 7;
 
-int angle = 90;
+int face_orient = 90;
 bool movingRight = true;
 bool driving = false;
 
@@ -33,7 +33,7 @@ void setup() {
 }
 
 void loop() {
-    if(angle == 90){ // Facing front
+    if(face_orient == 90){ // Facing front
         if(sonicDistance()<= collision_distance){
             stopTyres();
             neck.write(90);
@@ -43,16 +43,16 @@ void loop() {
                 turnTowards(checkToTurn());
                 delay(500);
             }else{
-                neck.write(angle);
+                neck.write(face_orient);
                 delay(500);
             }
             moveFwd();
         }
-    }else if(angle==0){ // Facing Left
+    }else if(face_orient==0){ // Facing Left
         //TODO handle looking left and right
         //Self balancing?
         delay(20);
-    }else if(angle==180){ // Facing Right
+    }else if(face_orient==180){ // Facing Right
         //TODO handle looking left and right
         //Self balancing?
         delay(20);
@@ -86,25 +86,25 @@ int sonicDistance(){
 
 void nextNeckAngle(){
     // TODO theres a  better way to handle this
-    if(angle == 180){
+    if(face_orient == 180){
         movingRight = false;
-    }else if (angle == 0){
+    }else if (face_orient == 0){
         movingRight = true;
     }
     if(movingRight){
-        if(angle == 0){
-            angle = 90;
-        }else if(angle == 90){
-            angle = 180;
+        if(face_orient == 0){
+            face_orient = 90;
+        }else if(face_orient == 90){
+            face_orient = 180;
         }
     }else{
-        if(angle == 180){
-            angle = 90;
-        }else if(angle == 90){
-            angle = 0;
+        if(face_orient == 180){
+            face_orient = 90;
+        }else if(face_orient == 90){
+            face_orient = 0;
         }
     }
-    neck.write(angle);
+    neck.write(face_orient);
 }
 
 char checkToTurn(){
@@ -120,7 +120,7 @@ char checkToTurn(){
     neck.write(180);
     delay(1000);
     int right = sonicDistance();
-    neck.write(angle);
+    neck.write(face_orient);
     delay(1000);
     if(left>right){
         return 'l';

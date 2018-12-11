@@ -2,7 +2,7 @@
 #include <AFMotor.h>
 #include <SoftwareSerial.h>
 
-bool debug = false; // TODO make const
+const bool debug = false;
 
 const int trig = 2; //Ultrasonic
 const int echo = 3; //Ultrasonic
@@ -17,16 +17,14 @@ const int rightSpeed = 87;
 
 
 const int collision_distance = 11;
+const int collision_left = 7;
+const int collision_right = 7;
 
 int angle = 90;
 bool movingRight = true;
 bool driving = false;
 
 void setup() {
-    if(debug) {
-        Serial.begin(9600);
-    }
-
     pinMode(trig,OUTPUT);
     pinMode(echo,INPUT);
     neck.attach(9);
@@ -71,7 +69,6 @@ void loop() {
 int sonicDistance(){
     long dur;
     long dis;
-    long dis_in;
     digitalWrite(trig,LOW);
     delayMicroseconds(2);
 

@@ -10,6 +10,7 @@ Simulator::Simulator() {
 }
 Simulator::rewireEdge(int distance, int angle){
     Node node;
+    Edge prevEdge = curNode.getEdge(angle);
     Edge edge(node, distance, angle);
     curNode = node;
 }

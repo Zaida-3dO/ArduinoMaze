@@ -4,25 +4,20 @@
 
 const int trig = 2; //Ultrasonic
 const int echo = 3; //Ultrasonic
-const int wifiRxPin = 6; //WIFI
-const int wifiTxPin = 10; //WIFI
 
 Servo neck;
 AF_DCMotor leftTire(4);
 AF_DCMotor rightTire(1);
-//SoftwareSerial wifiSerial(wifiRxPin, wifiTxPin); // RX, TX for ESP8266
 
 
-int speed = 100;
-int speed2 = 87;
+const int leftSpeed = 100;
+const int rightSpeed = 87;
+
+
+int collision_distance = 11;
 
 int angle = 90;
 bool movingRight = true;
-
-int responseTime = 10; //communication timeout
-String logs = "start";
-bool const DEBUG = true;
-int baudRate = 9600; //If this does not work, try 9600, 115200
 
 void setup() {
   Serial.begin(9600);
@@ -30,87 +25,44 @@ void setup() {
   pinMode(trig,OUTPUT);
   pinMode(echo,INPUT);
   neck.attach(9);
-//
-//   wifiSerial.begin(115200);
-//  Serial.println("Starting Config!");
-////  sendToWifi("AT+CIOBAUD=9600", responseTime, DEBUG); //Config Baud R8 //Doesnt work
-//  sendToWifi("AT+CWMODE=2", responseTime, DEBUG); // configure as access point
-//  sendToWifi("AT+CIFSR", responseTime, DEBUG); // get ip address
-//  sendToWifi("AT+CIPMUX=1", responseTime, DEBUG); // configure for multiple connections
-//  sendToWifi("AT+CIPSERVER=1,80", responseTime, DEBUG); // turn on server on port 80
-
-//  Serial.println("Wifi connection is running!");
-
   
   moveFwd();
-  // put your setup code here, to run once:
-
 }
 
 void loop() {
-//   pingWifi();
-   
-    delay(250);
-    char face = facing();
-    if(face == 'f'){
-      int sd = sonicDistance();
-      if(sd<=11){
-        if(sd==0){
-          addLog("Sonic returned 0");
-          return;
-        }
-        logSonic(angle,sd);
+    if(angle == 90){ // Facing front
+      if(sonicDistance()<= collision_distance){
         stopTyres();
         neck.write(90);
-        delay(500);
-        sd = sonicDistance();
-        if(sonicDistance() <=11){
-          if(sd==0){
-          addLog("Sonic returned 0");
-          return;
-        }else{
-          addLog("Confirming");
-          logSonic(angle,sd);
+        delay(250);
+        if(sonicDistance() <= collision_distance){
+          // TODO Store Node in Graph
           turnTowards(checkToTurn());
           delay(500);
-        }
         }else{
           neck.write(angle);
          delay(500);
         }
-        moveFwd();
-        
+        moveFwd();   
       }
-    }else{
+    }else if(angle==0){ // Facing Left
+      //TODO handle looking left and right
+      //Self balancing?
       delay(20);
+    }else if(angle==180){ // Facing Right
+      //TODO handle looking left and right
+      //Self balancing?
+      delay(20);
+    }else{
+      //??
     }
+    //Turn Neck and wait for turn to happen
     nextNeckAngle();
-    neck.write(angle);
+    delay(250);
  }
 
- void logSonic(int angle, int distance){
-  addLog("New Distance"); 
-  addLog("Angle",String(angle));
-  addLog("Distx",String(distance));
- }
 
- void addLog(String logFile){
-  logs+="\n"+logFile;
- }
- void addLog(String id, String logFile){
-  logs+="\n"+id+": "+logFile;
- }
-
-// void pingWifi(){
-//  if (wifiSerial.available() > 0) {
-//    String message = readWifiSerialMessage();
-//    Serial.print("Wifi Sample: ");  
-//    Serial.println("start{{}}  "+message+"  {{}}end");
-//    sendData(logs);
-//  }
-// }
-  
-  
+//  Check distance(in cm) from ultrasonic
  int sonicDistance(){
   long dur;
   long dis;
@@ -123,12 +75,15 @@ void loop() {
   digitalWrite(trig,LOW);
 
   dur=pulseIn(echo,HIGH);
+  if(dur==0){
+    // TODO handle Ultrasonic error
+  }
   dis = dur / 29 / 2;
   return dis;
-  
 }
 
 void nextNeckAngle(){
+  // TODO theres a  better way to handle this
   if(angle == 180){
     movingRight = false;
   }else if (angle == 0){
@@ -147,43 +102,35 @@ void nextNeckAngle(){
       angle = 0;
     }
   }
+  neck.write(angle);
 }
-
-char facing(){
-  if(angle>=0&&angle<=20){
-    return 'l';
-  }else if(angle>=60&&angle<=120){
-    return 'f';
-  }else if(angle>=160&&angle<=180){
-    return 'r';
-  }
-  return 'e';
-}
-  // put your main code here, to run repeatedly:
 
 void moveFwd(){
-  leftTire.setSpeed(speed);
-  rightTire.setSpeed(speed2);
+  leftTire.setSpeed(leftSpeed);
+  rightTire.setSpeed(rightSpeed);
   leftTire.run(FORWARD);
   rightTire.run(FORWARD);
 }
+
 void moveBack(){
-  leftTire.setSpeed(speed);
-  rightTire.setSpeed(speed2);
+  leftTire.setSpeed(leftSpeed);
+  rightTire.setSpeed(rightSpeed);
   leftTire.run(BACKWARD);
   rightTire.run(BACKWARD);
-  delay(300);
-  stopTyres();
+  
 }
 
 void stopTyres(){
   leftTire.run(RELEASE);
   rightTire.run(RELEASE);
 }
+
 char checkToTurn(){
   int front = sonicDistance();
   if(front<9){
     moveBack();
+    delay(300);
+    stopTyres();
   }
   neck.write(0);
   delay(1000);
@@ -202,95 +149,37 @@ char checkToTurn(){
 
 void turnTowards(char point){
   if(point == 'l'){
-    turnLeft();
-    delay(700);
+    rotateLeft();
+    delay(850);
     stopTyres();
   }
   if(point == 'r'){
-    turnRight();
+    rotateRight();
     delay(850);
     stopTyres();
   }
 }
 
-void turnRight(){
-  leftTire.setSpeed(speed);
+void rotateRight(){
+  leftTire.setSpeed(leftSpeed);
   leftTire.run(FORWARD);
 }
 
-void turnLeft(){
-  rightTire.setSpeed(speed);
+void rotateLeft(){
+  rightTire.setSpeed(rightSpeed);
   rightTire.run(FORWARD);
 }
 
-void turn(){
-  leftTire.setSpeed(100);
-  rightTire.setSpeed(95);
+void rotateRight_Centered(){
+  leftTire.setSpeed(leftSpeed);
+  rightTire.setSpeed(rightSpeed);
   leftTire.run(FORWARD);
   rightTire.run(BACKWARD);
 }
 
-/*
-  Name: sendData
-  Description: Function used to send string to tcp client using cipsend
-  Params:
-  Returns: void
-*/
-//void sendData(String str) {
-//  String len = "";
-//  len += str.length();
-//  sendToWifi("AT+CIPSEND=0," + len, responseTime, DEBUG);
-//  delay(100);
-//  sendToWifi(str, responseTime, DEBUG);
-//  delay(100);
-//  sendToWifi("AT+CIPCLOSE=5", responseTime, DEBUG);
-//}
-//
-///*
-//  Name: readWifiSerialMessage
-//  Description: Function used to read data from ESP8266 Serial.
-//  Params:
-//  Returns: The response from the esp8266 (if there is a reponse)
-//*/
-//String  readWifiSerialMessage() {
-//  char value[100];
-//  int index_count = 0;
-//  while (wifiSerial.available() > 0) {
-//    value[index_count] = wifiSerial.read();
-//    index_count++;
-//  }
-//  value[index_count] = '\0'; // Null terminate the string
-//  String str(value);
-//  str.trim();
-//  return str;
-//}
-
-
-
-///*
-//  Name: sendToWifi
-//  Description: Function used to send data to ESP8266.
-//  Params: command - the data/command to send; timeout - the time to wait for a response; debug - print to Serial window?(true = yes, false = no)
-//  Returns: The response from the esp8266 (if there is a reponse)
-//*/
-//String sendToWifi(String command, const int timeout, boolean debug) {
-//  String response = "";
-//  
-//  Serial.println("SEND TO WIFI: "+command);
-//  wifiSerial.println(command); // send the read character to the esp8266
-//  long int time = millis();
-//  while ( (time + timeout) > millis())
-//  {
-//    while (wifiSerial.available())
-//    {
-//      // The esp has data so display its output to the serial window
-//      char c = wifiSerial.read(); // read the next character.
-//      response += c;
-//    }
-//  }
-//  if (debug)
-//  {
-//    Serial.println("RESPONSE: "+ response);
-//  }
-//  return response;
-//}
+void rotateLeft_Centered(){
+  leftTire.setSpeed(leftSpeed);
+  rightTire.setSpeed(rightSpeed);
+  leftTire.run(BACKWARD);
+  rightTire.run(FORWARD);
+}

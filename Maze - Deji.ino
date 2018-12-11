@@ -11,62 +11,25 @@ Servo neck; //Servo Motor
 AF_DCMotor leftTire(4);
 AF_DCMotor rightTire(1);
 
-
 const int leftSpeed = 100;
 const int rightSpeed = 87;
-
 
 const int collision_distance = 11;
 const int collision_left = 7;
 const int collision_right = 7;
+const int mazeCellWidth;
 
-int angle = 90;
+const int FRONT_ORIENT = 90;
+const int LEFT_ORIENT = 0;
+const int RIGHT_ORIENT = 180;
+
+int face_orient = 90;
 bool movingRight = true;
 bool driving = false;
 
-void setup() {
-    pinMode(trig,OUTPUT);
-    pinMode(echo,INPUT);
-    neck.attach(9);
-
-    moveFwd();
-}
-
-void loop() {
-    if(angle == 90){ // Facing front
-        if(sonicDistance()<= collision_distance){
-            stopTyres();
-            neck.write(90);
-            delay(250);
-            if(sonicDistance() <= collision_distance){
-                // TODO Store Node in Graph
-                turnTowards(checkToTurn());
-                delay(500);
-            }else{
-                neck.write(angle);
-                delay(500);
-            }
-            moveFwd();
-        }
-    }else if(angle==0){ // Facing Left
-        //TODO handle looking left and right
-        //Self balancing?
-        delay(20);
-    }else if(angle==180){ // Facing Right
-        //TODO handle looking left and right
-        //Self balancing?
-        delay(20);
-    }else{
-        //??
-    }
-    //Turn Neck and wait for turn to happen
-    nextNeckAngle();
-    delay(250);
-}
-
 
 //  Check distance(in cm) from ultrasonic
-int sonicDistance(){
+long sonicDistance(){
     long dur;
     long dis;
     digitalWrite(trig,LOW);
@@ -84,62 +47,29 @@ int sonicDistance(){
     return dis;
 }
 
+// rotates the servo periodically
 void nextNeckAngle(){
-    // TODO theres a  better way to handle this
-    if(angle == 180){
+    // TODO there's a  better way to handle this
+    if(face_orient == 180){
         movingRight = false;
-    }else if (angle == 0){
+    }else if (face_orient == 0){
         movingRight = true;
     }
     if(movingRight){
-        if(angle == 0){
-            angle = 90;
-        }else if(angle == 90){
-            angle = 180;
+        if(face_orient == 0){
+            face_orient = 90;
+        }else if(face_orient == 90){
+            face_orient = 180;
         }
     }else{
-        if(angle == 180){
-            angle = 90;
-        }else if(angle == 90){
-            angle = 0;
+        if(face_orient == 180){
+            face_orient = 90;
+        }else if(face_orient == 90){
+            face_orient = 0;
         }
     }
-    neck.write(angle);
-}
-
-char checkToTurn(){
-    int front = sonicDistance();
-    if(front<9){
-        moveBack();
-        delay(300);
-        stopTyres();
-    }
-    neck.write(0);
-    delay(1000);
-    int left = sonicDistance();
-    neck.write(180);
-    delay(1000);
-    int right = sonicDistance();
-    neck.write(angle);
-    delay(1000);
-    if(left>right){
-        return 'l';
-    }else{
-        return 'r';
-    }
-}
-
-void turnTowards(char point){
-    if(point == 'l'){
-        rotateLeft();
-        delay(850);
-        stopTyres();
-    }
-    if(point == 'r'){
-        rotateRight();
-        delay(850);
-        stopTyres();
-    }
+    neck.write(face_orient);
+    delay(250);
 }
 
 //Tyres
@@ -162,6 +92,7 @@ void stopTyres(){
     leftTire.run(RELEASE);
     rightTire.run(RELEASE);
     driving = false;
+    delay(250);
 }
 
 void rotateRight(){
@@ -186,4 +117,87 @@ void rotateLeft_Centered(){
     rightTire.setSpeed(rightSpeed);
     leftTire.run(BACKWARD);
     rightTire.run(FORWARD);
+}
+
+// Check Direction to turn
+char checkToTurn(){
+    int front = sonicDistance();
+    if(front<9){
+        moveBack();
+        delay(300);
+        stopTyres();
+    }
+    neck.write(0);
+    delay(1000);
+    int left = sonicDistance();
+    neck.write(180);
+    delay(1000);
+    int right = sonicDistance();
+    neck.write(face_orient);
+    delay(1000);
+    if(left>right){
+        return 'l';
+    }else{
+        return 'r';
+    }
+}
+
+// Turn in a particular direction
+void turnTowards(char point){
+    if(point == 'l'){
+        rotateLeft();
+        delay(850);
+        stopTyres();
+    }
+    if(point == 'r'){
+        rotateRight();
+        delay(850);
+        stopTyres();
+    }
+}
+
+void setup() {
+    pinMode(trig,OUTPUT);
+    pinMode(echo,INPUT);
+    neck.attach(9);
+
+    moveFwd();
+}
+
+void loop() {
+    if(face_orient == FRONT_ORIENT){ // Facing front
+        if(sonicDistance() <= collision_distance){
+            stopTyres();
+            if(sonicDistance() <= collision_distance){
+                // TODO Store Node in Graph
+                turnTowards(checkToTurn());
+            }
+            moveFwd();
+        }
+    }else {
+        if(face_orient == LEFT_ORIENT){ // Facing Left
+            int sd = sonicDistance();
+            if(sd <= 8){
+                // TODO Self balancing
+            }else if(sd>mazeCellWidth){
+                // TODO Record Node to the Left in Graph
+            }
+            //TODO handle looking left and right
+            delay(20);// TODO remove
+        }else if(face_orient==RIGHT_ORIENT){ // Facing Right
+            int sd = sonicDistance();
+            if(sd <= 8){
+                // TODO Self balancing
+            }else if(sd>mazeCellWidth){
+                // TODO Record Node to the Right in Graph
+            }
+            //TODO handle looking left and right
+            //Self balancing?
+            delay(20);//TODO remove
+        }else{
+            //??
+        }
+    }
+    //Turn Neck and wait for turn to happen
+    nextNeckAngle();
 }

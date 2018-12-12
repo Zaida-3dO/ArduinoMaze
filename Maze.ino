@@ -17,7 +17,7 @@ const int rightSpeed = 87;
 const int collision_distance = 11;
 const int collision_left = 7;
 const int collision_right = 7;
-const int mazeCellWidth;
+const int mazeCellWidth; // TODO TEST Calculate
 
 const int FRONT_ORIENT = 90;
 const int LEFT_ORIENT = 0;
@@ -26,6 +26,9 @@ const int RIGHT_ORIENT = 180;
 int face_orient = 90;
 bool movingRight = true;
 bool driving = false;
+
+int last_distance;
+int error_counter;
 
 
 //  Check distance(in cm) from ultrasonic
@@ -105,6 +108,20 @@ void rotateLeft(){
     rightTire.run(FORWARD);
 }
 
+void nudgeRight(int nudgeTime){
+    rightTire.run(RELEASE);
+    delay(nudgeTime);
+    rightTire.setSpeed(rightSpeed);
+    rightTire.run(FORWARD);
+}// TODO TEST Nudge
+
+void nudgeLeft(int nudgeTime){
+    leftTire.run(RELEASE);
+    delay(nudgeTime)
+    leftTire.setSpeed(leftSpeed);
+    leftTire.run(FORWARD);
+}
+
 void rotateRight_Centered(){
     leftTire.setSpeed(leftSpeed);
     rightTire.setSpeed(rightSpeed);
@@ -156,6 +173,12 @@ void turnTowards(char point){
     }
 }
 
+//Function comparing current distance to last
+bool hasntMoved(long dist){
+    return (dist>= last_distance-2 && dist <= last_distance+2);
+
+}
+
 void setup() {
     pinMode(trig,OUTPUT);
     pinMode(echo,INPUT);
@@ -178,26 +201,37 @@ void loop() {
         if(face_orient == LEFT_ORIENT){ // Facing Left
             int sd = sonicDistance();
             if(sd <= 8){
-                // TODO Self balancing
+                if(driving){
+                    nudgeRight(100);
+                }
             }else if(sd>mazeCellWidth){
+                // stopTyres();
                 // TODO Record Node to the Left in Graph
             }
-            //TODO handle looking left and right
-            delay(20);// TODO remove
         }else if(face_orient==RIGHT_ORIENT){ // Facing Right
             int sd = sonicDistance();
             if(sd <= 8){
-                // TODO Self balancing
+                if(driving){
+                    nudgeLeft(100);
+                }
             }else if(sd>mazeCellWidth){
+                // stopTyres();
                 // TODO Record Node to the Right in Graph
             }
-            //TODO handle looking left and right
-            //Self balancing?
-            delay(20);//TODO remove
-        }else{
-            //??
         }
     }
-    //Turn Neck and wait for turn to happen
+    if(hasntMoved(sonicDistance() )){
+        error_counter++;
+        if(error_counter==4){
+            moveBack();
+            delay(600);
+            stopTyres();
+            moveFwd();
+            error_counter=0;
+        }
+    }else{
+        last_distance = sonicDistance();
+        error_counter=0;
+    }
     nextNeckAngle();
 }

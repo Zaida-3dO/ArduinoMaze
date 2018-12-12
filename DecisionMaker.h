@@ -1,5 +1,5 @@
 //
-// Created by opsij on 11/12/2018.
+// Created by f on 12/11/2018.
 //
 
 #ifndef MAZE_DECISIONMAKER_H
@@ -8,13 +8,15 @@
 
 class DecisionMaker {
 public:
-    char makeDecision(Graph graph, Node position, int botPosition);
+    int makeDecision(Graph graph, Node position, int botPosition);
+
 
 private:
-    const char LEFT = 'L';
-    const char RIGHT = 'R';
-    const char UP = 'U';
-    const char DOWN = 'D';
+    const int FACE_LEFT = 270;
+    const int FACE_RIGHT = 90;
+    const int FACE_FORWARD = 0;
+    const int FACE_BACKWARD = 180;
+    int resolveDirection(int botPosition, int turnToDirection);
 };
 
 
